@@ -57,7 +57,9 @@ class YTDriver:
         except: pass
 
         try:
-            confirm_button = self.driver.find_element(By.XPATH, '//button[.="Clear watch history"]')
+            confirm_button = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//button[.="Clear watch history"]'))
+            )
             confirm_button.click()
         except: pass
 
