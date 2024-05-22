@@ -9,7 +9,7 @@ if __name__ == '__main__':
   driver.login('username', 'password')
 
   # clear history
-  # driver.clear_history()
+  driver.clear_history()
 
   # search for a keyword
   for video in driver.search_videos('sports')[:1]:

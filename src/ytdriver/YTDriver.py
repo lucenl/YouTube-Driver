@@ -50,7 +50,7 @@ class YTDriver:
         """
         self.driver.get('https://www.youtube.com/feed/history')
         try:
-            clear_button = WebDriverWait(self.driver, 10).until(
+            clear_button = WebDriverWait(self.driver, 30).until(
                 EC.presence_of_element_located((By.XPATH, '//button[.="Clear all watch history"]'))
             )
             clear_button.click()
