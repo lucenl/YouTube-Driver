@@ -19,6 +19,7 @@ setup(
     install_requires=[
         'selenium',
         'pyvirtualdisplay',
-        'yt-dlp'
+        'yt-dlp',
+        'undetected-chromedriver'
     ]
 )
