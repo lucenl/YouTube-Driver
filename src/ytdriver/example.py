@@ -3,11 +3,17 @@ from ytdriver import YTDriver
 
 if __name__ == '__main__':
   # initialize the driver
-  driver = YTDriver(browser='chrome', verbose=True)
+  driver = YTDriver(verbose=True, version_main=124)
+
+  # login to account
+  driver.login('username', 'password')
+
+  # clear history
+  # driver.clear_history()
 
   # search for a keyword
   for video in driver.search_videos('sports')[:1]:
-    driver.play(video)
+    driver.play(video, 5)
 
   # get upnext
   for _ in range(3):
@@ -23,6 +29,6 @@ if __name__ == '__main__':
   if len(videos) > 0:
     # play the top video from the homepage for 30 seconds
     driver.play(videos[0], 30)
-    
+
   # close driver
   driver.close()

@@ -1,5 +1,4 @@
-from selenium.webdriver import Chrome, ChromeOptions, Firefox, FirefoxOptions
-from selenium.webdriver.firefox.service import Service
+import undetected_chromedriver as uc
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
@@ -18,12 +17,11 @@ class YTDriver:
         'ytp-ad-preview-container'
     ]
 
-    def __init__(self, browser='chrome', profile_dir=None, use_virtual_display=False, headless=False, verbose=False):
+    def __init__(self, profile_dir=None, use_virtual_display=False, headless=False, verbose=False, version_main=None,):
         """
         Initializes the webdriver and virtual display
 
         ### Arguments:
-        - `browser`: Specify `chrome` or `firefox` to launch the corresponding webdriver.
         - `profile_dir`: Specify a directory to save the browser profile so it can be loaded later. Set to `None` to not save the profile.
         - `use_virtual_display`: Set to `True` to launch a virtual display using `pyvirtualdisplay`.
         - `headless`: Set to `True` to run the browser in headless mode.
@@ -37,13 +35,7 @@ class YTDriver:
             display = Display(size=(1920,1080))
             display.start()
 
-        if browser == 'chrome':
-            self.driver = self.__init_chrome(profile_dir, headless)
-        elif browser == 'firefox':
-            self.driver = self.__init_firefox(profile_dir, headless)
-        else:
-            raise Exception("Invalid browser", browser)
-
+        self.__init_chrome(profile_dir, headless, version_main)
         self.driver.set_page_load_timeout(30)
 
     def close(self):
@@ -51,6 +43,53 @@ class YTDriver:
         Close the underlying webdriver.
         """
         self.driver.close()
+
+    def clear_history(self):
+        """
+        Clear the user watch history.
+        """
+        self.driver.get('https://www.youtube.com/feed/history')
+        clear_button = self.driver.find_element(By.XPATH, '//button[.="Clear all watch history"]')
+        clear_button.click()
+        
+        try:
+            confirm_button = self.driver.find_element(By.XPATH, '//button[.="Clear watch history"]')
+            confirm_button.click()
+        except: pass
+
+    def login(self, username, password):
+        # go to the homepage first
+        self.get_homepage_recommendations()
+
+        # click on signin
+        sign_in = self.driver.find_elements(By.XPATH, '//a[@aria-label="Sign in"]')
+        
+        if len(sign_in) == 0:
+            # no sign in button => already signed in
+            return
+
+        # click sign in button
+        sign_in[0].click()
+
+        # type in email
+        self.driver.find_element(By.XPATH, '//input[@type="email"]').send_keys(username)
+        sleep(3)
+
+        # click on next
+        self.driver.find_element(By.XPATH, '//span[text()="Next"]').click()
+        sleep(3)
+
+        # type in password
+        self.driver.find_element(By.XPATH, '//input[@type="password"]').send_keys(password)
+        sleep(3)
+
+        # click on next
+        self.driver.find_element(By.XPATH, '//span[text()="Next"]').click()
+        sleep(3)
+
+        # click on not now if asking for address
+        try: self.driver.find_element(By.XPATH, '//span[text()="Not now"]').click()
+        except: pass
 
     def get_homepage_recommendations(self, scroll_times=0) -> list[Video]:
         """
@@ -110,11 +149,12 @@ class YTDriver:
 
         # wait for recommendations
         elems = WebDriverWait(self.driver, 30).until(
-            EC.presence_of_all_elements_located((By.TAG_NAME, 'ytd-compact-video-renderer'))
+            EC.presence_of_all_elements_located((By.XPATH, '//ytd-compact-video-renderer|//ytd-rich-item-renderer'))
         )
 
         # recommended videos array
-        return [Video(elem, elem.find_elements(By.TAG_NAME, 'a')[0].get_attribute('href')) for elem in elems[:topn]]
+        elems = [el for el in elems if el.is_displayed()]
+        return [Video(elem, elem.find_element(By.TAG_NAME, 'a').get_attribute('href')) for elem in elems[:topn]]
 
     def search_videos(self, query, scroll_times=0) -> list[Video]:
         """
@@ -240,7 +280,7 @@ class YTDriver:
             # an ad is being shown
             # grab preview text to determine ad type
             preview = ad_elems[0]
-            text = preview.text.replace('\n', ' ')
+            text = preview.text.replace('\n', ' ').strip()
             wait = 0
             if 'after ad' in text or 'plays soon' in text:
                 # unskippable ad, grab ad length
@@ -253,6 +293,8 @@ class YTDriver:
                 self.__log('Short ad. Waiting for %d seconds...' % wait)
             else:
                 # skippable ad, grab time before skippable
+                if text == '':
+                    text = '10'
                 wait = int(text)
                 self.__log('Skippable ad. Skipping after %d seconds...' % wait)
 
@@ -271,27 +313,8 @@ class YTDriver:
         except:
             pass
     
-    def __init_chrome(self, profile_dir, headless):
-        options = ChromeOptions()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--window-size=1920,1080')
+    def __init_chrome(self, profile_dir, headless, version_main):
+        self.driver = uc.Chrome(user_data_dir=profile_dir, headless=headless, use_subprocess=False, version_main=version_main)
 
-        if profile_dir is not None:
-            options.add_argument('--user-data-dir=%s' % profile_dir)
-        if headless:
-            options.add_argument('--headless')
-
-        return Chrome(options=options)
-
-    def __init_firefox(self, profile_dir, headless):
-        options = FirefoxOptions()
-        options.add_argument('--window-size=1920,1080')
-        if profile_dir is not None:
-            pass
-        if headless:
-            options.add_argument('--headless')
-
-        service = Service(log_path=os.path.devnull)
-        return Firefox(options=options, service=service)
 
 
