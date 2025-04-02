@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "youtube-driver"
+version = "1.0.9"
+dependencies = [
+    "selenium",
+    "pyvirtualdisplay",
+    "yt-dlp",
+    "undetected-chromedriver",
+    "webdriver_manager"
+]
+requires-python = ">=3.7"
+authors = [
+  {name = "Muhammad Haroon", email = "mharoon@ucdavis.edu"}
+]
+maintainers = [
+  {name = "Muhammad Haroon", email = "mharoon@ucdavis.edu"}
+]
+description = "A library for programmatically interacting with YouTube."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICEN[CS]E.*"]

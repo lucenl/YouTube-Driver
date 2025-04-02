@@ -45,6 +45,10 @@ class VideoUnavailableException(Exception):
     """
     pass
 
+class NotAVideoException(Exception):
+    """
+    Exception thrown when creating a non-video object
+    """
 
 class Video:
     YT_DLP = YoutubeDL(dict(
@@ -52,9 +56,11 @@ class Video:
     ))
 
     def __init__(self, elem, url):
+        if 'watch?v=' not in url:
+            raise NotAVideoException()
         self.elem = elem
         self.url = url
-        self.videoId = re.search(r'[?&]v=(.*)?$', url).group(1).split('&')[0]
+        self.videoId = re.search(r'v=(.{11})', url).group(1)
         self.__metadata = None
 
     def get_metadata(self) -> VideoMetadata:

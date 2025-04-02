@@ -6,18 +6,17 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException
 from time import sleep
 from .Video import Video, VideoUnavailableException
-from .util import time2seconds
+from .util import time2seconds, get_chrome_version
 from pyvirtualdisplay import Display
-import os
+import logging
 
 class YTDriver:
 
     AD_CLASSNAMES = [
-        'ytp-preview-ad',
-        'ytp-ad-preview-container'
+        'ytp-ad-player-overlay-layout'
     ]
 
-    def __init__(self, profile_dir=None, use_virtual_display=False, headless=False, verbose=False, version_main=None,):
+    def __init__(self, profile_dir=None, use_virtual_display=False, headless=False, version_main=None):
         """
         Initializes the webdriver and virtual display
 
@@ -25,17 +24,20 @@ class YTDriver:
         - `profile_dir`: Specify a directory to save the browser profile so it can be loaded later. Set to `None` to not save the profile.
         - `use_virtual_display`: Set to `True` to launch a virtual display using `pyvirtualdisplay`.
         - `headless`: Set to `True` to run the browser in headless mode.
-        - `verbose`: Set to `True` to enable logging messages.
+        - `version_main`: Run a specific version of Chrome.
         """
 
-        self.verbose = verbose
+        self.logger = logging.getLogger('youtube-driver')
 
         if use_virtual_display:
             self.__log("Starting virtual display")
             display = Display(size=(1920,1080))
             display.start()
 
-        self.__init_chrome(profile_dir, headless, version_main)
+        if not version_main:
+            version_main = get_chrome_version()
+
+        self.__init_chrome(profile_dir=profile_dir, headless=headless, version_main=version_main)
         self.driver.set_page_load_timeout(30)
 
     def close(self):
@@ -228,8 +230,7 @@ class YTDriver:
 
     ## Helpers
     def __log(self, message):
-        if self.verbose:
-            print(message)
+        self.logger.info(message)
 
     def __click_video(self, video):
         if type(video) == Video:
@@ -254,63 +255,61 @@ class YTDriver:
 
     def __check_video_availability(self):
         try:
+            self.__log("Checking video availability")
             WebDriverWait(self.driver, 5).until(
                 EC.presence_of_element_located((By.XPATH, '//*[@id="container"]/h1'))
             )
+            self.__log("Video available")
         except WebDriverException:
+            self.__log("Video notavailable")
             raise VideoUnavailableException()
 
     def __click_play_button(self):
         try:
+            self.__log("Checking if video is playing")
             playBtn = self.driver.find_elements(By.CLASS_NAME, 'ytp-play-button')
+            self.__log(playBtn[0].get_attribute('title'))
             if 'Play' in playBtn[0].get_attribute('title'):
+                self.__log("Video not playing, clicking play button")
                 playBtn[0].click()
         except:
+            self.__log("Video is playing")
             pass
 
     def __handle_ads(self):
         # handle multiple ads
         while True:
-            sleep(1)
 
             # check if ad is being shown
-            xpath = '//div[%s]' % (' or '.join(["@class='%s'" % i for i in YTDriver.AD_CLASSNAMES]))
-            ad_elems = self.driver.find_elements(By.XPATH, xpath)
-            if len(ad_elems) == 0:
+            try:
+                self.__log('Checking for ads')
+                WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, 'ytp-ad-player-overlay-layout'))
+                )
+            except:
                 self.__log('Ad not detected')
-                # ad is not shown, return
                 return
 
             self.__log('Ad detected')
-            
-            # an ad is being shown
-            # grab preview text to determine ad type
-            preview = ad_elems[0]
-            text = preview.text.replace('\n', ' ').strip()
-            wait = 0
-            if 'after ad' in text or 'plays soon' in text:
-                # unskippable ad, grab ad length
-                length = self.driver.find_elements(By.CLASS_NAME, 'ytp-ad-duration-remaining')[0].text
-                wait = time2seconds(length)
-                self.__log('Unskippable ad. Waiting %d seconds...' % wait)
-            elif 'begin in' in text or 'end in' in text:
-                # short ad
-                wait = int(text.split()[-1])
-                self.__log('Short ad. Waiting for %d seconds...' % wait)
-            else:
-                # skippable ad, grab time before skippable
-                if text == '':
-                    text = '10'
-                wait = int(text)
-                self.__log('Skippable ad. Skipping after %d seconds...' % wait)
 
-            # wait for ad to finish
-            sleep(wait)
+            # check for ad type
+            try:
+                self.__log("Checking for ad type")
+                WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, 'ytp-skip-ad-button'))
+                )
+            except:
+                self.__log("Unskippable ad, waiting 15 seconds")
+                sleep(15)
+                return
 
-            # click skip button if available
-            skip = self.driver.find_elements(By.CLASS_NAME, 'ytp-skip-ad-button')
-            if len(skip) > 0:
-                skip[0].click()
+            try:
+                self.__log("Skippable ad, waiting for skip button")
+                WebDriverWait(self.driver, 15).until(
+                    EC.element_to_be_clickable((By.CLASS_NAME, 'ytp-skip-ad-button'))
+                ).click()
+            except:
+                pass
 
     def __clear_prompts(self):
         try:

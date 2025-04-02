@@ -3,7 +3,7 @@ from ytdriver import YTDriver
 
 if __name__ == '__main__':
   # initialize the driver
-  driver = YTDriver(verbose=True, version_main=124)
+  driver = YTDriver(verbose=True)
 
   # login to account
   driver.login('username', 'password')
