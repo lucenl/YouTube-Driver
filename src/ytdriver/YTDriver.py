@@ -12,10 +12,6 @@ import logging
 
 class YTDriver:
 
-    AD_CLASSNAMES = [
-        'ytp-ad-player-overlay-layout'
-    ]
-
     def __init__(self, profile_dir=None, use_virtual_display=False, headless=False, version_main=None):
         """
         Initializes the webdriver and virtual display
@@ -261,7 +257,7 @@ class YTDriver:
             )
             self.__log("Video available")
         except WebDriverException:
-            self.__log("Video notavailable")
+            self.__log("Video not available")
             raise VideoUnavailableException()
 
     def __click_play_button(self):
