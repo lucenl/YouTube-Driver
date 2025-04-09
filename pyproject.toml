@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 77.0.0"]
+requires = ["setuptools >= 70.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -12,7 +12,7 @@ dependencies = [
     "undetected-chromedriver",
     "webdriver_manager"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.7"
 authors = [
   {name = "Muhammad Haroon", email = "mharoon@ucdavis.edu"}
 ]
@@ -22,4 +22,3 @@ maintainers = [
 description = "A library for programmatically interacting with YouTube."
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
