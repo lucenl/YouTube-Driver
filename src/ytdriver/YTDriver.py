@@ -23,10 +23,10 @@ class YTDriver:
         - `version_main`: Run a specific version of Chrome.
         """
 
-        self.logger = logging.getLogger('youtube-driver')
+        self.__logger = logging.getLogger('youtube-driver')
 
         if use_virtual_display:
-            self.__log("Starting virtual display")
+            self.__logger.info("Starting virtual display")
             display = Display(size=(1920,1080))
             display.start()
 
@@ -108,10 +108,10 @@ class YTDriver:
         """
         # try to find the youtube icon
         try:
-            self.__log('Clicking homepage icon')
+            self.__logger.info('Clicking homepage icon')
             self.driver.find_element(By.ID, 'logo-icon').click()
         except:
-            self.__log('Getting homepage via URL')
+            self.__logger.info('Getting homepage via URL')
             self.driver.get('https://www.youtube.com')
 
         # wait for page to load
@@ -213,7 +213,7 @@ class YTDriver:
             self.__clear_prompts()
             sleep(duration)
         except WebDriverException as e:
-            self.__log(e)
+            self.__logger.exception(e)
 
     def save_screenshot(self, filename):
         """
@@ -224,25 +224,21 @@ class YTDriver:
         """
         return self.driver.save_screenshot(filename)
 
-    ## Helpers
-    def __log(self, message):
-        self.logger.info(message)
-
     def __click_video(self, video):
         if type(video) == Video:
             try:
                 # try to click the element using selenium
-                self.__log("Clicking element via Selenium...")
+                self.__logger.info("Clicking element via Selenium...")
                 video.elem.click()
                 return
             except Exception as e:
                 try:
                     # try to click the element using javascript
-                    self.__log("Failed. Clicking via Javascript...")
+                    self.__logger.info("Failed. Clicking via Javascript...")
                     self.driver.execute_script('arguments[0].click()', video.elem)
                 except:
                     # js click failed, just open the video url
-                    self.__log("Failed. Loading video URL...")
+                    self.__logger.info("Failed. Loading video URL...")
                     self.driver.get(video.url)
         elif type(video) == str:
             self.driver.get(video)
@@ -251,25 +247,25 @@ class YTDriver:
 
     def __check_video_availability(self):
         try:
-            self.__log("Checking video availability")
+            self.__logger.info("Checking video availability")
             WebDriverWait(self.driver, 5).until(
                 EC.presence_of_element_located((By.XPATH, '//*[@id="container"]/h1'))
             )
-            self.__log("Video available")
+            self.__logger.info("Video available")
         except WebDriverException:
-            self.__log("Video not available")
+            self.__logger.exception("Video not available")
             raise VideoUnavailableException()
 
     def __click_play_button(self):
         try:
-            self.__log("Checking if video is playing")
+            self.__logger.info("Checking if video is playing")
             playBtn = self.driver.find_elements(By.CLASS_NAME, 'ytp-play-button')
-            self.__log(playBtn[0].get_attribute('title'))
+            self.__logger.info(playBtn[0].get_attribute('title'))
             if 'Play' in playBtn[0].get_attribute('title'):
-                self.__log("Video not playing, clicking play button")
+                self.__logger.info("Video not playing, clicking play button")
                 playBtn[0].click()
         except:
-            self.__log("Video is playing")
+            self.__logger.info("Video is playing")
             pass
 
     def __handle_ads(self):
@@ -278,29 +274,29 @@ class YTDriver:
 
             # check if ad is being shown
             try:
-                self.__log('Checking for ads')
+                self.__logger.info('Checking for ads')
                 WebDriverWait(self.driver, 5).until(
                     EC.presence_of_element_located((By.CLASS_NAME, 'ytp-ad-player-overlay-layout'))
                 )
             except:
-                self.__log('Ad not detected')
+                self.__logger.info('Ad not detected')
                 return
 
-            self.__log('Ad detected')
+            self.__logger.info('Ad detected')
 
             # check for ad type
             try:
-                self.__log("Checking for ad type")
+                self.__logger.info("Checking for ad type")
                 WebDriverWait(self.driver, 5).until(
                     EC.presence_of_element_located((By.CLASS_NAME, 'ytp-skip-ad-button'))
                 )
             except:
-                self.__log("Unskippable ad, waiting 15 seconds")
+                self.__logger.info("Unskippable ad, waiting 15 seconds")
                 sleep(15)
                 return
 
             try:
-                self.__log("Skippable ad, waiting for skip button")
+                self.__logger.info("Skippable ad, waiting for skip button")
                 WebDriverWait(self.driver, 15).until(
                     EC.element_to_be_clickable((By.CLASS_NAME, 'ytp-skip-ad-button'))
                 ).click()
