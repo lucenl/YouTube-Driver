@@ -21,4 +21,5 @@ maintainers = [
 ]
 description = "A library for programmatically interacting with YouTube."
 readme = "README.md"
-license-files = ["LICEN[CS]E.*"]
+license = "MIT"
+license-files = ["LICENSE"]
