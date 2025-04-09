@@ -260,7 +260,6 @@ class YTDriver:
         try:
             self.__logger.info("Checking if video is playing")
             playBtn = self.driver.find_elements(By.CLASS_NAME, 'ytp-play-button')
-            self.__logger.info(playBtn[0].get_attribute('title'))
             if 'Play' in playBtn[0].get_attribute('title'):
                 self.__logger.info("Video not playing, clicking play button")
                 playBtn[0].click()
