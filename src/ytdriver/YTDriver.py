@@ -222,9 +222,9 @@ class YTDriver:
                     self.driver.refresh()
                     sleep(2)
 
-            if not available:
-                self.__logger.error("Video not available after %d tries", max_tries)
-                raise VideoUnavailableException()
+            # if not available:
+            #     self.__logger.error("Video not available after %d tries", max_tries)
+            #     raise VideoUnavailableException()
 
             # proceed to play
             self.__click_play_button()
