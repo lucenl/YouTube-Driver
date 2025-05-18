@@ -196,7 +196,7 @@ class YTDriver:
         return results
 
 
-    def play(self, video, duration=5):
+    def play(self, video, duration=5, max_tries=3):
         """
         Play a video for a set duration. Returns when that duration passes.
 
@@ -207,13 +207,33 @@ class YTDriver:
         """
         try:
             self.__click_video(video)
-            self.__check_video_availability()
+
+            available = False
+            tries_left = max_tries
+            while tries_left > 0:
+                try:
+                    self.__check_video_availability()
+                    self.__logger.info("Video available")
+                    available = True
+                    break
+                except VideoUnavailableException:
+                    tries_left -= 1
+                    self.__logger.info(f"Video unavailable, {tries_left} tries left; refreshing...")
+                    self.driver.refresh()
+                    sleep(2)
+
+            if not available:
+                self.__logger.error("Video not available after %d tries", max_tries)
+                raise VideoUnavailableException()
+
+            # proceed to play
             self.__click_play_button()
             self.__handle_ads()
             self.__clear_prompts()
             sleep(duration)
+
         except WebDriverException as e:
-            self.__logger.exception(e)
+            self.__logger.exception("WebDriverException in play(): %s", e)
 
     def save_screenshot(self, filename):
         """
